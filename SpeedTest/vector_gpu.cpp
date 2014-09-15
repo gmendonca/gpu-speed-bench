@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
+#include <ctime>
  
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
@@ -27,6 +29,8 @@ int GetTimeMs()
 }
  
 int main(void) {
+    // Create the variables for the time measure
+    int starttime, stoptime;
     // Create the two input vectors
     int i;
     const int LIST_SIZE = 1024;
@@ -50,6 +54,9 @@ int main(void) {
     source_str = (char*)malloc(MAX_SOURCE_SIZE);
     source_size = fread( source_str, 1, MAX_SOURCE_SIZE, fp);
     fclose( fp );
+
+    //Get initial time
+    starttime = GetTimeMs();
  
     // Get platform and device information
     cl_platform_id platform_id = NULL;
@@ -109,6 +116,11 @@ int main(void) {
     // Display the result to the screen
     //for(i = 0; i < LIST_SIZE; i++)
     //    printf("%d + %d = %d\n", A[i], B[i], C[i]);
+
+    //Get stop time
+    stoptime = GetTimeMs();
+
+    printf("Duration= %d ms\n", stoptime - starttime);
  
     // Clean up
     ret = clFlush(command_queue);

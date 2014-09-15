@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
+#include <ctime>
  
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
@@ -54,7 +56,7 @@ int main(void) {
     fclose( fp );
 
     //Get the initial time
-
+    starttime = GetTimeMs();
  
     // Get platform and device information
     cl_platform_id platform_id = NULL;
@@ -115,7 +117,10 @@ int main(void) {
     //for(i = 0; i < LIST_SIZE; i++)
     //    printf("%d + %d = %d\n", A[i], B[i], C[i]);
 
+    //Get final time
+    stoptime = GetTimeMs();
 
+    printf("Duration = %d ms\n", stoptime - starttime);
  
     // Clean up
     ret = clFlush(command_queue);
