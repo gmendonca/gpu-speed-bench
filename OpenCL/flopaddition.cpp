@@ -10,22 +10,7 @@
    // OpenCL includes
    #include <CL/cl.h>
 
-   // OpenCL kernel to perform an element-wise addition
-   const char* programSource =
-   "__kernel \n"
-   "void vecadd(__global int *A,                   \n"
-   "            __global int *B,                   \n"
-   "            __global int *C)                   \n"
-   "{                                              \n"
-   "                                               \n"
-   " // Get the work-item's unique ID              \n"
-   " int idx=get_global_id(0);                     \n"
-   " \n"
-   " // Add the corresponding locations of         \n"
-   " // 'A' and 'B', and store the result in 'C'.  \n"
-   " C[idx]=A[idx]+B[idx];                         \n"
-   "}                                              \n"
-   ;
+   #define MAX_SOURCE_SIZE (0x100000)
 
    int GetTimeMs(){
       /* Linux */
@@ -54,9 +39,9 @@
          // This code executes on the OpenCL host
 
          // Host data
-         int *A=NULL; // Input array
-         int *B=NULL; // Input array
-         int *C=NULL; // Output array
+         float *A=NULL; // Input array
+         float *B=NULL; // Input array
+         float *C=NULL; // Output array
 
          // Elements in each array
           const int elements=2048;
@@ -64,29 +49,28 @@
          size_t datasize=sizeof(int)*elements;
 
          // Allocate space for input/output data
-         A=(int*)malloc(datasize);
-         B=(int*)malloc(datasize);
-         C=(int*)malloc(datasize);
+         A=(float*)malloc(datasize);
+         B=(float*)malloc(datasize);
+         C=(float*)malloc(datasize);
 
          // Initialize the input data
-         int i;
-         for(i=0; i<elements; i++) {
-             A[i]=i;
-             B[i]=i;
-         }
+         A[0]=2.2;
+         A[1]=1.3;
+         B[0]=3.7;
+         B[1]=5.4;
 
-         // Load the kernel source code into the array source_str
+
+         // Load the kernel source code into the array programSource
 	     FILE *fp;
-	     char *source_str;
-	     size_t source_size;
+	     char *programSource;
+	     size_t programSize;
 	 
-	     fp = fopen("vector_kernels.cl", "r");
+	     fp = fopen("fplos_kernels.cl", "r");
 	     if (!fp) {
 	         fprintf(stderr, "Failed to load kernel.\n");
 	         exit(1);
 	     }
-	     source_str = (char*)malloc(MAX_SOURCE_SIZE);
-	     source_size = fread( source_str, 1, MAX_SOURCE_SIZE, fp);
+	     programSource = (char*)malloc(MAX_SOURCE_SIZE);
 	     fclose( fp );
 
          // Use this to check the output of each API call
@@ -102,55 +86,55 @@
               numPlatforms*sizeof(cl_platform_id));
 
          // Fill in the platforms
-         status=clGetPlatformIDs(numPlatforms, platforms, NULL);
+         status = clGetPlatformIDs(numPlatforms, platforms, NULL);
 
          // Retrieve the number of devices
          cl_uint numDevices=0;
-         status=clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_ALL, 0,
+         status = clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_ALL, 0,
                NULL,&numDevices);
 
          // Allocate enough space for each device
          cl_device_id *devices;
-         devices=(cl_device_id*)malloc(
+         devices = (cl_device_id*)malloc(
                numDevices*sizeof(cl_device_id));
 
          // Fill in the devices
-         status=clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_ALL,
+         status = clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_ALL,
               numDevices, devices, NULL);
 
          // Create a context and associate it with the devices
          cl_context context;
-         context=clCreateContext(NULL, numDevices, devices, NULL,
+         context = clCreateContext(NULL, numDevices, devices, NULL,
              NULL, &status);
 
          // Create a command queue and associate it with the device
          cl_command_queue cmdQueue;
-         cmdQueue=clCreateCommandQueue(context, devices[0], 0,
+         cmdQueue = clCreateCommandQueue(context, devices[0], 0,
             &status);
 
          // Create a buffer object that will contain the data
          // from the host array A
          cl_mem bufA;
-         bufA=clCreateBuffer(context, CL_MEM_READ_ONLY, datasize,
+         bufA = clCreateBuffer(context, CL_MEM_READ_ONLY, datasize,
              NULL, &status);
 
          // Create a buffer object that will contain the data
          // from the host array B
          cl_mem bufB;
-         bufB=clCreateBuffer(context, CL_MEM_READ_ONLY, datasize,
+         bufB = clCreateBuffer(context, CL_MEM_READ_ONLY, datasize,
             NULL, &status);
 
          // Create a buffer object that will hold the output data
          cl_mem bufC;
-         bufC=clCreateBuffer(context, CL_MEM_WRITE_ONLY, datasize,
+         bufC = clCreateBuffer(context, CL_MEM_WRITE_ONLY, datasize,
             NULL, &status);
 
          // Write input array A to the device buffer bufferA
-         status=clEnqueueWriteBuffer(cmdQueue, bufA, CL_FALSE,
+         status = clEnqueueWriteBuffer(cmdQueue, bufA, CL_FALSE,
             0, datasize, A, 0, NULL, NULL);
 
          // Write input array B to the device buffer bufferB
-         status=clEnqueueWriteBuffer(cmdQueue, bufB, CL_FALSE,
+         status = clEnqueueWriteBuffer(cmdQueue, bufB, CL_FALSE,
             0, datasize, B, 0, NULL, NULL);
 
          // Create a program with source code
@@ -163,7 +147,7 @@
 
          // Create the vector addition kernel
          cl_kernel kernel;
-         kernel=clCreateKernel(program, "vecadd", &status);
+         kernel=clCreateKernel(program, "floatadd", &status);
 
          // Associate the input and output buffers with the kernel
          status=clSetKernelArg(kernel, 0, sizeof(cl_mem), &bufA);
@@ -186,19 +170,8 @@
          clEnqueueReadBuffer(cmdQueue, bufC, CL_TRUE, 0,
             datasize, C, 0, NULL, NULL);
 
-         // Verify the output
-         int result=1;
-         for(i=0; i<elements; i++) {
-            if(C[i] !=i+i) {
-               result=0;
-               break;
-             }
-        }
-        if(result) {
-           printf("Output is correct\n");
-        } else {
-            printf("Output is incorrect\n");
-        }
+           printf("Output = %.1f\n", C[0]);
+           printf("Output = %.1f\n", C[1]);
 
         // Free OpenCL resources
          clReleaseKernel(kernel);
