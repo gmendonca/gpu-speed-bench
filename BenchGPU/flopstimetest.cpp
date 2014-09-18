@@ -57,6 +57,9 @@ int main(void) {
     source_str = (char*)malloc(MAX_SOURCE_SIZE);
     source_size = fread( source_str, 1, MAX_SOURCE_SIZE, fp);
     fclose( fp );
+
+     //Get initial time
+    starttime = GetTimeMs();
  
     cl_uint ret_num_devices = 0;
     cl_uint ret_num_platforms = 0;
@@ -75,14 +78,14 @@ int main(void) {
     ret = clGetPlatformIDs(ret_num_platforms, platforms, NULL);
 
     // Retrieve the number of devices
-    ret = clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_ALL, 0, NULL, &ret_num_devices);
+    ret = clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_GPU, 0, NULL, &ret_num_devices);
 
     // Allocate enough space for each device
     cl_device_id *devices;
     devices = (cl_device_id*)malloc(ret_num_devices*sizeof(cl_device_id));
 
     // Fill in the devices
-    ret = clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_ALL, ret_num_devices, devices,  NULL);
+    ret = clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_GPU, ret_num_devices, devices,  NULL);
  
     // Create an OpenCL context
     cl_context context = clCreateContext( NULL, ret_num_devices, devices, NULL, NULL, &ret);
@@ -111,21 +114,18 @@ int main(void) {
     // Set the arguments of the kernel
     ret = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&sum_mem_obj);
     ret = clSetKernelArg(kernel, 1, sizeof(int), &N);
- 
-    //Get initial time
-    starttime = GetTimeMs();
 
     // Execute the OpenCL kernel on the list
     size_t global_item_size = LIST_SIZE; // Process the entire lists
     ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, 
             &global_item_size, NULL, 0, NULL, NULL);
-
-    //Get stop time
-    stoptime = GetTimeMs();
  
     // Read the memory buffer C on the device to the local variable C
     ret = clEnqueueReadBuffer(command_queue, sum_mem_obj, CL_TRUE, 0, 
             LIST_SIZE * sizeof(int), sum, 0, NULL, NULL);
+
+    //Get stop time
+    stoptime = GetTimeMs();
  
     // Display the result to the screen
     for(i = 0; i < LIST_SIZE; i++)
