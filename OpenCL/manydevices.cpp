@@ -61,20 +61,37 @@ int main(void) {
     //Get initial time
     starttime = GetTimeMs();
  
-    // Get platform and device information
-    cl_platform_id platform_id = NULL;
-    cl_device_id device_id = NULL;   
-    cl_uint ret_num_devices;
-    cl_uint ret_num_platforms;
-    cl_int ret = clGetPlatformIDs(1, &platform_id, &ret_num_platforms);
-    ret = clGetDeviceIDs( platform_id, CL_DEVICE_TYPE_GPU, 1, 
-            &device_id, &ret_num_devices);
+    cl_uint ret_num_devices = 0;
+    cl_uint ret_num_platforms = 0;
+
+    // Use this to check the output of each API call
+    cl_int ret;
+
+    // Retrieve the number of platforms
+    ret = clGetPlatformIDs(0, NULL, &ret_num_platforms);
+
+    // Allocate enough space for each platform
+    cl_platform_id *platforms = NULL;
+    platforms = (cl_platform_id*)malloc(ret_num_platforms*sizeof(cl_platform_id));
+
+    // Fill in the platforms
+    ret = clGetPlatformIDs(ret_num_platforms, platforms, NULL);
+
+    // Retrieve the number of devices
+    ret = clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_ALL, 0, NULL, &ret_num_devices);
+
+    // Allocate enough space for each device
+    cl_device_id *devices;
+    devices = (cl_device_id*)malloc(ret_num_devices*sizeof(cl_device_id));
+
+    // Fill in the devices
+    ret = clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_ALL, ret_num_devices, devices,  NULL);
  
     // Create an OpenCL context
-    cl_context context = clCreateContext( NULL, 1, &device_id, NULL, NULL, &ret);
+    cl_context context = clCreateContext( NULL, ret_num_devices, devices, NULL, NULL, &ret);
  
     // Create a command queue
-    cl_command_queue command_queue = clCreateCommandQueue(context, device_id, 0, &ret);
+    cl_command_queue command_queue = clCreateCommandQueue(context, devices[0], 0, &ret);
  
     // Create memory buffers on the device for each vector
     cl_mem sum_mem_obj = clCreateBuffer(context, CL_MEM_WRITE_ONLY, 
@@ -89,7 +106,7 @@ int main(void) {
             (const char **)&source_str, (const size_t *)&source_size, &ret);
  
     // Build the program
-    ret = clBuildProgram(program, 1, &device_id, NULL, NULL, NULL);
+    ret = clBuildProgram(program, ret_num_devices, devices, NULL, NULL, NULL);
  
     // Create the OpenCL kernel
     cl_kernel kernel = clCreateKernel(program, "simplefloatadd", &ret);
