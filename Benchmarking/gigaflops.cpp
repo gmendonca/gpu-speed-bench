@@ -132,7 +132,7 @@ int main( int argc, char *argv[] ) {
  
     // Execute the OpenCL kernel on the list
     size_t global_item_size = LIST_SIZE; // Process the entire lists
-    size_t global_work_offset = 64;
+    size_t global_work_offset = 4;
     ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, 
             &global_item_size, &global_work_offset, 0, NULL, NULL);
  
