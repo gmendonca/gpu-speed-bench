@@ -28,14 +28,14 @@ int main( int argc, char *argv[] ) {
     // Create the two input vectors and instance the output vector
     int i, N;
     const int LIST_SIZE = 1024;
-    float *A = (float*)malloc(sizeof(int)*LIST_SIZE);
-    float *B = (float*)malloc(sizeof(int)*LIST_SIZE);
-    float *C = (float*)malloc(sizeof(int)*LIST_SIZE);
+    int *A = (int*)malloc(sizeof(int)*LIST_SIZE);
+    int *B = (int*)malloc(sizeof(int)*LIST_SIZE);
+    int *C = (int*)malloc(sizeof(int)*LIST_SIZE);
     
     for(i = 0; i < LIST_SIZE; i++) {
-        A[i] = 0.3;
-        B[i] = 0.4;
-        C[i] = 0.0;
+        A[i] = 5;
+        B[i] = 7;
+        C[i] = 0;
     }
 
     //Ask to the user, how many interactions he wants to see
@@ -54,7 +54,7 @@ int main( int argc, char *argv[] ) {
  
     // Display the result to the screen
     //for(i = 0; i < LIST_SIZE; i++)
-        printf("(%.1f + %.1f)*%d = %.1f\n", A[0], B[0], N, C[0]);
+        printf("(%d + %d)*%d = %d\n", A[0], B[0], N, C[0]);
 
     //Get stop time
     stoptime = GetTimeMs();
