@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <ctime>
+#include <string.h>
  
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
@@ -38,16 +39,26 @@ int main( int argc, char *argv[] ) {
     // Load the kernel source code into the array source_str
     FILE *fp;
     char *source_str;
-    char *get_str;
-    size_t source_size;
+    char *source;
+    char *copy;
+    size_t source_size, sourcesize;
  
-    fp = fopen("txt/1b.txt", "r");
+    fp = fopen("copystring_kernels.cl", "r");
     if (!fp) {
         fprintf(stderr, "Failed to load kernel.\n");
         exit(1);
     }
     source_str = (char*)malloc(MAX_SOURCE_SIZE);
     source_size = fread( source_str, 1, MAX_SOURCE_SIZE, fp);
+    fclose( fp );
+
+    fp = fopen("txt/1b.txt", "r");
+    if (!fp) {
+        fprintf(stderr, "Failed to load kernel.\n");
+        exit(1);
+    }
+    source = (char*)malloc(MAX_SOURCE_SIZE);
+    sourcesize = fread( source, 1, MAX_SOURCE_SIZE, fp);
     fclose( fp );
 
      //Get initial time
@@ -87,17 +98,35 @@ int main( int argc, char *argv[] ) {
  
     // Create memory buffers on the device for each vector 
     cl_mem str_mem_obj = clCreateBuffer(context, CL_MEM_READ_ONLY, 
-            source_size * sizeof(int), NULL, &ret);
+            sourcesize * sizeof(int), NULL, &ret);
     cl_mem read_mem_obj = clCreateBuffer(context, CL_MEM_READ_ONLY, 
-            source_size * sizeof(int), NULL, &ret);
+            sourcesize * sizeof(int), NULL, &ret);
 
     //write file on the memory
     ret = clEnqueueWriteBuffer(command_queue, str_mem_obj, CL_TRUE, 0,
-            source_size * sizeof(int), source_str, 0, NULL, NULL);
+            sourcesize * sizeof(int), source, 0, NULL, NULL);
+
+    // Create a program from the kernel source
+    cl_program program = clCreateProgramWithSource(context, 1, 
+            (const char **)&source_str, (const size_t *)&source_size, &ret);
+ 
+    // Build the program
+    ret = clBuildProgram(program, ret_num_devices, devices, NULL, NULL, NULL);
+
+    cl_kernel kernel = clCreateKernel(program, "memorycopy", &ret);
+
+    // Set the arguments of the kernel
+    ret = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&str_mem_obj);
+    ret = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&read_mem_obj);
+    // Execute the OpenCL kernel on the list
+    size_t global_item_size = LIST_SIZE; // Process the entire lists
+    size_t global_work_offset = 64; //Divide work-groups
+    ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, 
+            &global_item_size, &global_work_offset, 0, NULL, NULL);
 
     //read file on the memory
     ret = clEnqueueReadBuffer(command_queue, read_mem_obj, CL_TRUE, 0, 
-            source_size * sizeof(int), get_str, 0, NULL, NULL);
+            sourcesize * sizeof(int), copy, 0, NULL, NULL);
     
     //Get stop time
     stoptime = GetTimeMs();
@@ -107,10 +136,13 @@ int main( int argc, char *argv[] ) {
     // Clean up
     ret = clFlush(command_queue);
     ret = clFinish(command_queue);
+    ret = clReleaseKernel(kernel);
+    ret = clReleaseProgram(program);
     ret = clReleaseMemObject(str_mem_obj);
+    ret = clReleaseMemObject(read_mem_obj);
     ret = clReleaseCommandQueue(command_queue);
     ret = clReleaseContext(context);
-    free(source_str);
-    free(get_str);
+    free(source);
+    free(copy);
     return 0;
 }
