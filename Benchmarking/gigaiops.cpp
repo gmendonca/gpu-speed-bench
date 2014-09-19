@@ -28,34 +28,33 @@ int GetTimeMs()
  return ret;
 }
  
-int main(void) {
+int main( int argc, char *argv[] ) {
     // Create the variables for the time measure
     int starttime, stoptime;
-    //Create the variables for the kernels execution time measure
-    int startKtime, stopKtime;
     // Create the two input vectors and instance the output vector
     int i, N;
     const int LIST_SIZE = 1024;
-    float *A = (float*)malloc(sizeof(int)*LIST_SIZE);
-    float *B = (float*)malloc(sizeof(int)*LIST_SIZE);
-    float *C = (float*)malloc(sizeof(int)*LIST_SIZE);
+    int *A = (int*)malloc(sizeof(int)*LIST_SIZE);
+    int *B = (int*)malloc(sizeof(int)*LIST_SIZE);
+    int *C = (int*)malloc(sizeof(int)*LIST_SIZE);
     
     for(i = 0; i < LIST_SIZE; i++) {
-        A[i] = 0.3;
-        B[i] = 0.4;
-        C[i] = 0.0;
+        A[i] = 5;
+        B[i] = 7;
+        C[i] = 0;
     }
 
     //Ask to the user, how many interactions he wants to see
-    printf("How many interactions(*1024):\n");
-    scanf("%d",&N);
+    //printf("How many interactions(*1024):\n");
+    //scanf("%d",&N);
+    N = strtol(argv[1], NULL, 10);
  
     // Load the kernel source code into the array source_str
     FILE *fp;
     char *source_str;
     size_t source_size;
  
-    fp = fopen("vectorfloataddition_kernels.cl", "r");
+    fp = fopen("arrayadd_kernels.cl", "r");
     if (!fp) {
         fprintf(stderr, "Failed to load kernel.\n");
         exit(1);
@@ -118,44 +117,37 @@ int main(void) {
     // Create a program from the kernel source
     cl_program program = clCreateProgramWithSource(context, 1, 
             (const char **)&source_str, (const size_t *)&source_size, &ret);
-    
-    //Get initial time
-    startKtime = GetTimeMs();
+ 
     // Build the program
     ret = clBuildProgram(program, ret_num_devices, devices, NULL, NULL, NULL);
  
     // Create the OpenCL kernel
-    cl_kernel kernel = clCreateKernel(program, "floatadd", &ret);
+    cl_kernel kernel = clCreateKernel(program, "intadd", &ret);
  
     // Set the arguments of the kernel
     ret = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void *)&a_mem_obj);
     ret = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&b_mem_obj);
     ret = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&c_mem_obj);
     ret = clSetKernelArg(kernel, 3, sizeof(int), &N);
-    
-    
+ 
     // Execute the OpenCL kernel on the list
     size_t global_item_size = LIST_SIZE; // Process the entire lists
-    size_t global_work_offset = 16;
+    size_t global_work_offset = 16; //Divide work-groups
     ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, 
             &global_item_size, &global_work_offset, 0, NULL, NULL);
-
-    //Get stop time
-    stopKtime = GetTimeMs();
-    stoptime = GetTimeMs();
+ 
     // Read the memory buffer C on the device to the local variable C
     ret = clEnqueueReadBuffer(command_queue, c_mem_obj, CL_TRUE, 0, 
             LIST_SIZE * sizeof(int), C, 0, NULL, NULL);
  
     // Display the result to the screen
     //for(i = 0; i < LIST_SIZE; i++)
-        printf("%.1f + %.1f = %.1f\n", A[0], B[0], C[0]);
+        printf("(%d + %d)*%d = %d\n", A[0], B[0], N, C[0]);
 
     //Get stop time
-    //stoptime = GetTimeMs();
+    stoptime = GetTimeMs();
 
-    printf("Duration = %d ms\n", stoptime - starttime);
-    printf("Duration Kernel Execution = %d ms\n", stopKtime - startKtime);
+    printf("Duration= %d ms\n", stoptime - starttime);
  
     // Clean up
     ret = clFlush(command_queue);
