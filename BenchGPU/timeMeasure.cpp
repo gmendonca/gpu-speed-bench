@@ -31,6 +31,8 @@ int GetTimeMs()
 int main(void) {
     // Create the variables for the time measure
     int starttime, stoptime;
+    //Create the variables for the kernels execution time measure
+    int startKtime, stopKtime;
     // Create the two input vectors and instance the output vector
     int i, N;
     const int LIST_SIZE = 1024;
@@ -111,12 +113,17 @@ int main(void) {
     ret = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&b_mem_obj);
     ret = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void *)&c_mem_obj);
     ret = clSetKernelArg(kernel, 3, sizeof(int), &N);
- 
+    
+    //Get initial time
+    startKtime = GetTimeMs();
     // Execute the OpenCL kernel on the list
     size_t global_item_size = LIST_SIZE; // Process the entire lists
     size_t global_work_offset = 8;
     ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, 
             &global_item_size, &global_work_offset, 0, NULL, NULL);
+
+    //Get stop time
+    stopKtime = GetTimeMs();
  
     // Read the memory buffer C on the device to the local variable C
     ret = clEnqueueReadBuffer(command_queue, c_mem_obj, CL_TRUE, 0, 
