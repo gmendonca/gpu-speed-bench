@@ -118,7 +118,7 @@ int main(void) {
     startKtime = GetTimeMs();
     // Execute the OpenCL kernel on the list
     size_t global_item_size = LIST_SIZE; // Process the entire lists
-    size_t global_work_offset = 8;
+    size_t global_work_offset = 32;
     ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, 
             &global_item_size, &global_work_offset, 0, NULL, NULL);
 
@@ -136,7 +136,8 @@ int main(void) {
     //Get stop time
     stoptime = GetTimeMs();
 
-    printf("Duration= %d ms\n", stoptime - starttime);
+    printf("Duration = %d ms\n", stoptime - starttime);
+    printf("Duration Kernel Execution = %d ms\n", stopKtime - startKtime);
  
     // Clean up
     ret = clFlush(command_queue);
