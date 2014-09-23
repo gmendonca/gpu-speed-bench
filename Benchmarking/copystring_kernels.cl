@@ -1,6 +1,6 @@
-__kernel void memorycopy(__global char *source,__global char *copy){
+__kernel void memorybuffercopy( __global char* buf, __global char* buf2 ){
+       int x = get_global_id(0);
 
-    	memcpy (copy, source, strlen(source)+1);
-	}
+       buf2[x] = buf[x];
 
 }

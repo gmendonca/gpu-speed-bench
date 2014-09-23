@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <ctime>
+#include <pthread.h>
  
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
@@ -10,6 +11,12 @@
 #endif
  
 #define MAX_SOURCE_SIZE (0x100000)
+
+char *source_str;
+size_t source_size;
+const int LIST_SIZE = 1024;
+int N;
+int totalTime;
 
 int GetTimeMs()
 {
@@ -27,14 +34,11 @@ int GetTimeMs()
 
  return ret;
 }
- 
-int main( int argc, char *argv[] ) {
-    // Create the variables for the time measure
-    int starttime, stoptime;    
-    int startKtime, stopKtime;    
-    // Create the two input vectors and instance the output vector
-    int i, N;
-    const int LIST_SIZE = 1024;
+
+void* run(void *whatever){
+
+    int starttime, stoptime, i;
+
     float *A = (float*)malloc(sizeof(int)*LIST_SIZE);
     float *B = (float*)malloc(sizeof(int)*LIST_SIZE);
     float *C = (float*)malloc(sizeof(int)*LIST_SIZE);
@@ -44,27 +48,7 @@ int main( int argc, char *argv[] ) {
         B[i] = 0.4;
         C[i] = 0.0;
     }
-
-    //Ask to the user, how many interactions he wants to see
-    //printf("How many interactions(*1024):\n");
-    //scanf("%d",&N);
-    N = strtol(argv[1], NULL, 10);
- 
-    // Load the kernel source code into the array source_str
-    FILE *fp;
-    char *source_str;
-    size_t source_size;
- 
-    fp = fopen("arrayadd_kernels.cl", "r");
-    if (!fp) {
-        fprintf(stderr, "Failed to load kernel.\n");
-        exit(1);
-    }
-    source_str = (char*)malloc(MAX_SOURCE_SIZE);
-    source_size = fread( source_str, 1, MAX_SOURCE_SIZE, fp);
-    fclose( fp );
-
-     //Get initial time
+    //Get initial time
     starttime = GetTimeMs();
  
     cl_uint ret_num_devices = 0;
@@ -133,7 +117,7 @@ int main( int argc, char *argv[] ) {
  
     // Execute the OpenCL kernel on the list
     size_t global_item_size = LIST_SIZE; // Process the entire lists
-    size_t global_work_offset = 64;
+    size_t global_work_offset = 4;
     ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, 
             &global_item_size, &global_work_offset, 0, NULL, NULL);
  
@@ -143,12 +127,15 @@ int main( int argc, char *argv[] ) {
  
     // Display the result to the screen
     //for(i = 0; i < LIST_SIZE; i++)
-        printf("(%.1f + %.1f)*%d = %.1f\n", A[0], B[0], N, C[0]);
+        //printf("(%.1f + %.1f)*%d = %.1f\n", A[0], B[0], N, C[0]);
 
     //Get stop time
     stoptime = GetTimeMs();
 
-    printf("Duration= %d ms\n", stoptime - starttime);
+    //printf("Duration= %d ms\n", stoptime - starttime);
+
+    totalTime += stoptime - starttime;
+    printf("Duration= %d ms\n", totalTime);
  
     // Clean up
     ret = clFlush(command_queue);
@@ -163,5 +150,36 @@ int main( int argc, char *argv[] ) {
     free(A);
     free(B);
     free(C);
+    pthread_exit(NULL);
+}
+ 
+int main( int argc, char *argv[] ) {
+    int i, ts, t;
+    N = strtol(argv[1], NULL, 10);
+
+    ts = atoi(argv[2]);
+    pthread_t threads[ts];
+    const char *message = "Thread"; 
+    // Load the kernel source code into the array source_str
+    FILE *fp;
+ 
+    fp = fopen("arrayadd_kernels.cl", "r");
+    if (!fp) {
+        fprintf(stderr, "Failed to load kernel.\n");
+        exit(1);
+    }
+    source_str = (char*)malloc(MAX_SOURCE_SIZE);
+    source_size = fread( source_str, 1, MAX_SOURCE_SIZE, fp);
+    fclose( fp );
+
+    totalTime = 0;
+    for(i=0; i<ts; i++){
+      t = pthread_create(&threads[i], NULL, run, (void *)message);
+      if (t){
+         printf("ERROR; return code from pthread_create() is %d\n", t);
+         return -1;
+      }
+    }
+    pthread_exit(NULL);
     return 0;
 }
