@@ -20,11 +20,8 @@ int GetTimeMs()
  gettimeofday(&tv, NULL);
 
  unsigned int ret = tv.tv_usec;
- /* Convert from micro seconds (10^-6) to milliseconds (10^-3) */
- //ret /= 1000;
-
- /* Adds the seconds (10^0) after converting them to milliseconds (10^-3) */
- ret += (tv.tv_sec * 1000);
+ 
+ ret += (tv.tv_sec * 1000000);
 
  return ret;
 }
@@ -46,7 +43,7 @@ int main( int argc, char *argv[] ) {
     if(strcmp(argv[1], "1b") == 0)fp = fopen("txt/1b.txt", "rb");
     else if(strcmp(argv[1], "1kb") == 0)fp = fopen("txt/1kb.txt", "rb");
     else if(strcmp(argv[1], "1mb") == 0)fp = fopen("txt/1mb.txt", "rb");
-    else if(strcmp(argv[1], "10mb") == 0)fp = fopen("txt/1mb.txt", "rb");
+    else if(strcmp(argv[1], "10mb") == 0)fp = fopen("txt/10mb.txt", "rb");
     else fp = fopen("txt/alice.txt", "rb");
     //printf("%s\n", argv[1]);
     if (!fp) {
