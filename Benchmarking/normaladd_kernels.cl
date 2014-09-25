@@ -4,7 +4,7 @@ __kernel void floatadd(__global float *C, const int N){
     int i = get_global_id(0);
     
     for(long j = 0; j < N;j++){
-    C[i] += 0.3*0.7;
+    C[i] += 0.3;
     }
 
 }
@@ -15,7 +15,7 @@ __kernel void intadd(__global int *C, const int N){
     int i = get_global_id(0);
     
     for(long j = 0; j < N;j++){
-    C[i] *= 5+5;
+    C[i] += 5;
     }
 
 }
