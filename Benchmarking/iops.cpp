@@ -9,20 +9,17 @@
 #include <CL/cl.hpp>
 #endif
  
-#define MAX_SOURCE_SIZE (0x100000)
+#define MAX_SOURCE_SIZE (0x100000000)
 
-long GetTimeMs()
+int GetTimeMs()
 {
  /* Linux */
  struct timeval tv;
 
  gettimeofday(&tv, NULL);
 
- unsigned long ret = tv.tv_usec;
- /* Convert from micro seconds (10^-6) to milliseconds (10^-3) */
- //ret /= 1000;
+ unsigned int ret = tv.tv_usec;
 
- /* Adds the seconds (10^0) after converting them to milliseconds (10^-3) */
  ret += (tv.tv_sec * 1000000);
 
  return ret;
@@ -30,7 +27,7 @@ long GetTimeMs()
  
 int main( int argc, char *argv[] ) {
     // Create the variables for the time measure
-    int starttime, stoptime;
+    long starttime, stoptime;
     // Create the two input vectors and instance the output vector
     int i, wgs;
     long N;
@@ -97,12 +94,12 @@ int main( int argc, char *argv[] ) {
     cl_command_queue command_queue = clCreateCommandQueue(context, devices[0], 0, &ret);
  
     // Create memory buffers on the device for each vector 
-    cl_mem a_mem_obj = clCreateBuffer(context, CL_MEM_READ_ONLY, 
+    cl_mem c_mem_obj = clCreateBuffer(context, CL_MEM_WRITE_ONLY, 
             LIST_SIZE * sizeof(int), NULL, &ret);
  
     // Copy the lists A and B to their respective memory buffers
-    ret = clEnqueueWriteBuffer(command_queue, a_mem_obj, CL_TRUE, 0,
-            LIST_SIZE * sizeof(int), A, 0, NULL, NULL);
+    ret = clEnqueueWriteBuffer(command_queue, c_mem_obj, CL_TRUE, 0, 
+            LIST_SIZE * sizeof(int), C, 0, NULL, NULL);
  
     // Create a program from the kernel source
     cl_program program = clCreateProgramWithSource(context, 1, 
@@ -120,38 +117,30 @@ int main( int argc, char *argv[] ) {
  
     // Execute the OpenCL kernel on the list
     size_t global_item_size = LIST_SIZE; // Process the entire lists
-    size_t global_work_offset = wgs; //Divide work-groups
+    size_t global_work_offset = 64; //Divide work-groups
     ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, 
             &global_item_size, &global_work_offset, 0, NULL, NULL);
  
     // Read the memory buffer C on the device to the local variable C
     ret = clEnqueueReadBuffer(command_queue, c_mem_obj, CL_TRUE, 0, 
             LIST_SIZE * sizeof(int), C, 0, NULL, NULL);
- 
-    // Display the result to the screen
-    //for(i = 0; i < LIST_SIZE; i++)
-        //printf("(%d + %d)*%d = %d\n", N, C[0]);
 
     //Get stop time
     stoptime = GetTimeMs();
 
-    printf("Each iteration 0.7*%ld = %.1f\n", N, C[0]);
+    printf("Each iteration 0.7*%ld = %d\n", N, C[0]);
     printf("Duration = %ld us\n", stoptime - starttime);
-    printf("FLOP = %ld\n", 1024*N);
-    printf("FLOPS = %.6f GB/s\n", (float)(1024*N)/(1000*(stoptime - starttime)));
+    printf("IOP = %ld\n", 1024*N);
+    printf("GIOPS = %.6f\n", (double)(1024*N)/(1000*(stoptime - starttime)));
  
     // Clean up
     ret = clFlush(command_queue);
     ret = clFinish(command_queue);
     ret = clReleaseKernel(kernel);
     ret = clReleaseProgram(program);
-    ret = clReleaseMemObject(a_mem_obj);
-    ret = clReleaseMemObject(b_mem_obj);
     ret = clReleaseMemObject(c_mem_obj);
     ret = clReleaseCommandQueue(command_queue);
     ret = clReleaseContext(context);
-    free(A);
-    free(B);
     free(C);
     return 0;
 }

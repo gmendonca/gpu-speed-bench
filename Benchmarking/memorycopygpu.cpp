@@ -20,7 +20,7 @@ int GetTimeMs()
  gettimeofday(&tv, NULL);
 
  unsigned int ret = tv.tv_usec;
- 
+
  ret += (tv.tv_sec * 1000000);
 
  return ret;
@@ -30,7 +30,7 @@ int main( int argc, char *argv[] ) {
     // Create the variables for the time measure
     int starttime, stoptime;
     // Create the two input vectors and instance the output vector
-    int i, N, lSize;
+    int i, N, lSize, wgs;
     const int LIST_SIZE = 1024;
  
     // Load the kernel source code into the array source_str
@@ -45,7 +45,7 @@ int main( int argc, char *argv[] ) {
     else if(strcmp(argv[1], "1mb") == 0)fp = fopen("txt/1mb.txt", "rb");
     else if(strcmp(argv[1], "10mb") == 0)fp = fopen("txt/10mb.txt", "rb");
     else fp = fopen("txt/alice.txt", "rb");
-    //printf("%s\n", argv[1]);
+
     if (!fp) {
         fprintf(stderr, "Failed to load buffer.\n");
         exit(1);
@@ -74,6 +74,7 @@ int main( int argc, char *argv[] ) {
     //printf("source = %s\n", source);
 
     copy = (char *)calloc( 1, lSize+1 );
+    wgs = atoi(argv[2]);
  
     cl_uint ret_num_devices = 0;
     cl_uint ret_num_platforms = 0;
@@ -139,7 +140,7 @@ int main( int argc, char *argv[] ) {
 
     // Execute the OpenCL kernel on the list
     size_t global_item_size = lSize; // Process the entire lists
-    //size_t global_work_offset = 64; //Divide work-groups
+    size_t global_work_offset = wgs; //Divide work-groups
     ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, &global_item_size, NULL, 0, NULL, NULL);
 
     starttime = GetTimeMs();

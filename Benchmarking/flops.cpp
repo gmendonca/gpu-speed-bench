@@ -128,19 +128,14 @@ int main( int argc, char *argv[] ) {
     // Read the memory buffer C on the device to the local variable C
     ret = clEnqueueReadBuffer(command_queue, c_mem_obj, CL_TRUE, 0, 
             LIST_SIZE * sizeof(int), C, 0, NULL, NULL);
-    
- 
-    // Display the result to the screen
-    //for(i = 0; i < LIST_SIZE; i++)
-        //printf("0.7*%d = %.1f\n", N, C[0]);
 
     //Get stop time
     stoptime = GetTimeMs();
 
-    printf("Each iteration 0.7*%ld = %.1f\n", N, C[0]);
+    //printf("Each iteration 0.7*%ld = %.1f\n", N, C[0]);
     printf("Duration = %ld us\n", stoptime - starttime);
     printf("FLOP = %ld\n", 1024*N);
-    printf("FLOPS = %.6f GB/s\n", (float)(1024*N)/(1000*(stoptime - starttime)));
+    printf("GFLOPS = %.6f\n", (double)(1024*N)/(1000*(stoptime - starttime)));
  
     // Clean up
     ret = clFlush(command_queue);
