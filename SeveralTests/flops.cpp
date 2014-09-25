@@ -11,14 +11,14 @@
  
 #define MAX_SOURCE_SIZE (0x100000)
 
-int GetTimeMs()
+long GetTimeMs()
 {
  /* Linux */
  struct timeval tv;
 
  gettimeofday(&tv, NULL);
 
- unsigned int ret = tv.tv_usec;
+ unsigned long ret = tv.tv_usec;
  /* Convert from micro seconds (10^-6) to milliseconds (10^-3) */
  //ret /= 1000;
 
@@ -30,13 +30,11 @@ int GetTimeMs()
  
 int main( int argc, char *argv[] ) {
     // Create the variables for the time measure
-    int starttime, stoptime;    
-    int startKtime, stopKtime;    
+    long starttime, stoptime;  
     // Create the two input vectors and instance the output vector
-    int i, N, wgs;
+    int i, wgs;
+    long N;
     const int LIST_SIZE = 1024;
-    float *A = (float*)malloc(sizeof(int)*LIST_SIZE);
-    float *B = (float*)malloc(sizeof(int)*LIST_SIZE);
     float *C = (float*)malloc(sizeof(int)*LIST_SIZE);
     
     for(i = 0; i < LIST_SIZE; i++) {
@@ -124,22 +122,22 @@ int main( int argc, char *argv[] ) {
     // Execute the OpenCL kernel on the list
     size_t global_item_size = LIST_SIZE; // Process the entire lists
     size_t global_work_offset = wgs;
+
+    
     ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, 
             &global_item_size, &global_work_offset, 0, NULL, NULL);
  
     // Read the memory buffer C on the device to the local variable C
     ret = clEnqueueReadBuffer(command_queue, c_mem_obj, CL_TRUE, 0, 
             LIST_SIZE * sizeof(int), C, 0, NULL, NULL);
-    
- 
-    // Display the result to the screen
-    //for(i = 0; i < LIST_SIZE; i++)
-        printf("(%.1f + %.1f)*%d = %.1f\n", A[0], B[0], N, C[0]);
 
     //Get stop time
     stoptime = GetTimeMs();
 
-    printf("Duration= %d us\n", stoptime - starttime);
+    //printf("Each iteration 0.7*%ld = %.1f\n", N, C[0]);
+    printf("Duration = %ld us\n", stoptime - starttime);
+    printf("FLOP = %ld\n", 1024*N);
+    printf("GFLOPS = %.6f\n", (double)(1024*N)/(1000*(stoptime - starttime)));
  
     // Clean up
     ret = clFlush(command_queue);
@@ -149,8 +147,6 @@ int main( int argc, char *argv[] ) {
     ret = clReleaseMemObject(c_mem_obj);
     ret = clReleaseCommandQueue(command_queue);
     ret = clReleaseContext(context);
-    free(A);
-    free(B);
     free(C);
     return 0;
 }
