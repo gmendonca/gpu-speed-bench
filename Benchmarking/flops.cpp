@@ -20,8 +20,8 @@ int main( int argc, char *argv[] ) {
     float *C = (float*)malloc(sizeof(int)*LIST_SIZE);
 
     for(i = 0; i < LIST_SIZE; i++) {
-        A[i] = i;
-        B[i] = LIST_SIZE - i;
+        A[i] = 0.6;
+        B[i] = 0.7;
     }
 
     N = atoi(argv[1]);
@@ -199,7 +199,7 @@ int main( int argc, char *argv[] ) {
     elapsed += (time_end - time_start);
 
     //printf("Each iteration 0.3*%ld = %.1f\n", N, C[0]);
-    printf("Elaplsed time = %.1f ms\n", elapsed/1000);
+    printf("Elaplsed time = %.3f ms\n", elapsed/1000000);
     printf("FLOP = %ld\n", 1024*N);
     printf("GFLOPS = %.6f\n", (double)(1024*N)/(elapsed));
  

@@ -15,13 +15,13 @@ int main( int argc, char *argv[] ) {
     int i, wgs;
     long N;
     const int LIST_SIZE = 1024;
-    float *A = (float*)malloc(sizeof(int)*LIST_SIZE);
-    float *B = (float*)malloc(sizeof(int)*LIST_SIZE);
-    float *C = (float*)malloc(sizeof(int)*LIST_SIZE);
+    int *A = (int*)malloc(sizeof(int)*LIST_SIZE);
+    int *B = (int*)malloc(sizeof(int)*LIST_SIZE);
+    int *C = (int*)malloc(sizeof(int)*LIST_SIZE);
 
     for(i = 0; i < LIST_SIZE; i++) {
-        A[i] = i;
-        B[i] = LIST_SIZE - i;
+        A[i] = 5;
+        B[i] = 7;
     }
 
     N = atoi(argv[1]);
@@ -103,17 +103,17 @@ int main( int argc, char *argv[] ) {
 
     ret = clEnqueueWriteBuffer(command_queue, a_mem_obj, CL_TRUE, 0, LIST_SIZE * sizeof(int), A, 0, NULL, NULL);
     if (ret < 0) {
-        printf("Error Command Queue= %d\n", ret);
+        printf("Error Buffer= %d\n", ret);
         return -1;
     }
     ret = clEnqueueWriteBuffer(command_queue, b_mem_obj, CL_TRUE, 0, LIST_SIZE * sizeof(int), B, 0, NULL, NULL);
     if (ret < 0) {
-        printf("Error Command Queue= %d\n", ret);
+        printf("Error Buffer= %d\n", ret);
         return -1;
     }
     ret = clEnqueueWriteBuffer(command_queue, c_mem_obj, CL_TRUE, 0, LIST_SIZE * sizeof(int), C, 0, NULL, NULL);
     if (ret < 0) {
-        printf("Error Command Queue= %d\n", ret);
+        printf("Error Buffer= %d\n", ret);
         return -1;
     }
  
@@ -132,7 +132,7 @@ int main( int argc, char *argv[] ) {
     }
  
     // Create the OpenCL kernel
-    cl_kernel kernel = clCreateKernel(program, "floatadd", &ret);
+    cl_kernel kernel = clCreateKernel(program, "intadd", &ret);
     if (ret < 0) {
         printf("Error Kernel = %d\n", ret);
         return -1;
@@ -168,13 +168,13 @@ int main( int argc, char *argv[] ) {
     double elapsed = 0;
     cl_ulong time_start, time_end;
 
-    //for (long k = 0; k < N; k++){
+    for (long k = 0; k < N; k++){
         ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, &global_item_size, &global_work_offset, 0, NULL, &event);
         if (ret < 0) {
             printf("Error NDRange = %d\n", ret);
             return -1;
         }
-    //}
+    }
 
     ret = clWaitForEvents(1, &event);
     if (ret < 0) {
@@ -199,7 +199,7 @@ int main( int argc, char *argv[] ) {
     elapsed += (time_end - time_start);
 
     //printf("Each iteration 0.3*%ld = %.1f\n", N, C[0]);
-    printf("Elaplsed time = %.1f ms\n", elapsed/1000);
+    printf("Elaplsed time = %.3f ms\n", elapsed/1000000);
     printf("FLOP = %ld\n", 1024*N);
     printf("GFLOPS = %.6f\n", (double)(1024*N)/(elapsed));
  
